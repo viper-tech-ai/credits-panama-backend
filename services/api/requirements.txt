@@ -1,0 +1,14 @@
+fastapi==0.105.0
+gunicorn==21.2.0
+uvicorn==0.25.0
+langchain==0.1.0
+langchainhub==0.1.14
+openai==1.6.1
+langchain-openai==0.0.2
+motor==3.3.2
+twilio==9.0.1
+phonenumbers==8.13.32
+python-multipart==0.0.9
+aiologger==0.7.0
+aiofiles==23.2.1
+supabase-py-async==2.5.6

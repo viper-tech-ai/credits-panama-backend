@@ -1,0 +1,37 @@
+version: '3.8'
+
+services:
+  web:
+    build:
+       context: ./services/api
+    command: gunicorn main:app --bind 0.0.0.0:5000 -w 1 -k uvicorn.workers.UvicornWorker
+    environment:
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - API_KEY_INTERNAL=${API_KEY_INTERNAL}
+      - MONGO_CONNECTION_STRING=${MONGO_CONNECTION_STRING}
+      - API_KEY_CREDITS_PANAMA=${API_KEY_CREDITS_PANAMA}
+      - TWILIO_ACCOUNT_SID=${TWILIO_ACCOUNT_SID}
+      - TWILIO_AUTH_TOKEN=${TWILIO_AUTH_TOKEN}
+      - B2C_USER=${B2C_USER}
+      - B2C_PASS=${B2C_PASS}
+      - SUPABASE_URL=${SUPABASE_URL}
+      - SUPABASE_KEY=${SUPABASE_KEY}
+    expose:
+      - 5000
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.fastapi.rule=Host(`credits-panama-api.vipertech.ai`)"
+      - "traefik.http.routers.fastapi.tls=true"
+      - "traefik.http.routers.fastapi.tls.certresolver=letsencrypt"
+    volumes:
+      - "./logs:/home/app/logs"
+
+  traefik:
+    image: traefik:v2.10.7
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - "/var/run/docker.sock:/var/run/docker.sock:ro"
+      - "./services/traefik/traefik.prod.toml:/etc/traefik/traefik.toml"
+      - "./logs:/home/app/logs"
