@@ -169,7 +169,7 @@ async def handle_incoming_message_client(
     twilio_signature = request.headers.get('x-twilio-signature')
     validator = RequestValidator(AUTH_TOKEN)
 
-    if not validator.validate("https://credit-api.ponx.ai/e510fa23-138a-457f-9577-69b58aa1b24b", form_data, twilio_signature):
+    if not validator.validate("https://credits-panama-api.vipertech.ai/e510fa23-138a-457f-9577-69b58aa1b24b", form_data, twilio_signature):
         await async_logger.warning(f"Hacking Attempt with request: {request}")
         return "Ok" 
 
