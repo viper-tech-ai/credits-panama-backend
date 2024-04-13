@@ -17,8 +17,8 @@ user = os.environ.get('B2C_USER')
 pwd = os.environ.get('B2C_PASS')
 
 class MobileNumber(BaseModel):
-    country_calling_code: str
-    number: str
+    country_calling_code: int 
+    number: int
 
 class Contact(BaseModel):
     full_name: str
@@ -120,7 +120,7 @@ async def agent_handover(chat_manager: ChatManager, dni_number: str, conversatio
         contact = Contact (
             full_name=dni_number,
             identification=33,
-            number=MobileNumber(
+            mobile_number=MobileNumber(
                 country_calling_code=country_code,
                 number=national_number, 
             )
