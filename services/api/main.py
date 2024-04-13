@@ -173,7 +173,7 @@ async def handle_incoming_message_client(
         await async_logger.warning(f"Hacking Attempt with request: {request}")
         return "Ok" 
 
-    chat_id = chat_manager.get_chat_id(data_dict['ConversationSid'])
+    chat_id = await chat_manager.get_chat_id(data_dict['ConversationSid'])
     if chat_id:
         await chat_manager.update_conversation_by_phone(data_dict['ConversationSid'], data_dict['Author'])
 
