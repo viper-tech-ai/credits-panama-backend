@@ -248,8 +248,7 @@ async def handle_incoming_message_client(
         if direct_to_agent:
             await memory.add_message_permament(message.message, message.conversation, MessageType.B2CHAT_CLIENT, message.author)
             await b2chat.post_message_to_agent(chat_manager, message.message, id)
-            
-        return "Ok"
+            return "Ok"
 
     bot_on = await switch_manager.check_off_switch()
 
