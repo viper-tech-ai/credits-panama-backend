@@ -242,11 +242,12 @@ async def handle_incoming_message_client(
 
     message = Message(message=data_dict['Body'], author=data_dict['Author'], conversation=data_dict['ConversationSid'])
     
-    direct_to_agent = await chat_manager.get_direct_to_agent()
     id = await chat_manager.get_chat_id(message.conversation)
-    if direct_to_agent and id:
-        await memory.add_message_permament(message.message, message.conversation, MessageType.B2CHAT_CLIENT, message.author)
-        await b2chat.post_message_to_agent(chat_manager, message.message, id)
+    if id:
+        direct_to_agent = await chat_manager.get_direct_to_agent(id)
+        if direct_to_agent:
+            await memory.add_message_permament(message.message, message.conversation, MessageType.B2CHAT_CLIENT, message.author)
+            await b2chat.post_message_to_agent(chat_manager, message.message, id)
             
         return "Ok"
 
