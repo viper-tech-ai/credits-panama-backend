@@ -120,7 +120,7 @@ async def agent_handover(chat_manager: ChatManager, dni_number: str, conversatio
         contact = Contact (
             full_name=dni_number,
             identification=33,
-            mobile_number=MobileNumber(
+            mobileNumber=MobileNumber(
                 country_calling_code=country_code,
                 number=national_number, 
             )
