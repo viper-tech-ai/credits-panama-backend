@@ -55,7 +55,7 @@ async def post_chat(access_token: str, chat_id, contact: Contact, initial_msg: s
     unique_id = str(uuid.uuid4())
 
     if contact and not chat_id:
-        contact_dict = contact.model_dump(by_alias=True)
+        contact_dict = contact.dict(by_alias=True)
         data = {
             "contact": contact_dict,
             "bot_chat": [
