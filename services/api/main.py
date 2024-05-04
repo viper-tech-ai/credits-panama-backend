@@ -130,29 +130,29 @@ async def handle_incoming_message_agent(request: Request) -> str:
                     twilio_messaging.send_answer_to_client("El agente ha cerrado el chat.", conversation_number)
                     await memory_manager.add_message_permament("El agente ha cerrado el chat.", conversation_number, MessageType.B2CHAT_AGENT, phone_number)
                     await session_manager.clear_unprocessed_media_urls(conversation_number)
-                await chat_manager.delete_chat_by_id(chat_id)
+                await chat_manager.set_direct_to_agent_false(chat_id)
             elif event_type == 'ASSIGNED_AGENT':
                 if conversation_number:
                     await memory_manager.add_message_permament("El agente ha abierto el chat, ahora estás hablando con un agente.", conversation_number, MessageType.B2CHAT_AGENT, phone_number)
                     twilio_messaging.send_answer_to_client("El agente ha abierto el chat, ahora estás hablando con un agente.", conversation_number)
-                await chat_manager.update_assigned_agent(chat_id)
+                await chat_manager.set_direct_to_agent_false(chat_id)
             elif event_type == 'AGENT_STARTED_CHAT':
                 if conversation_number:
                     await memory_manager.add_message_permament("El agente ha abierto el chat, ahora estás hablando con un agente.", conversation_number, MessageType.B2CHAT_AGENT, phone_number)
                     twilio_messaging.send_answer_to_client("El agente ha abierto el chat, ahora estás hablando con un agente.", conversation_number)
-                await chat_manager.update_assigned_agent(chat_id)
+                await chat_manager.set_direct_to_agent_false(chat_id)
             elif event_type == 'AGENT_UNAVAILABLE':
                 await async_logger.warn("Problem B2Chat AGENT_UNAVAILABLE")
                 if conversation_number:
                     await memory_manager.add_message_permament("Los agentes están actualmente no disponibles, nos pondremos en contacto contigo tan pronto como uno esté disponible.", conversation_number, MessageType.B2CHAT_AGENT, phone_number)
                     twilio_messaging.send_answer_to_client("Los agentes están actualmente no disponibles, nos pondremos en contacto contigo tan pronto como uno esté disponible.", conversation_number)
-                await chat_manager.delete_chat_by_id(chat_id)
+                await chat_manager.set_direct_to_agent_false(chat_id)
             elif event_type == 'CHAT_UNAVAILABLE':
                 await async_logger.warn("Problem B2Chat CHAT_UNAVAILABLE")
                 if conversation_number:
                     await memory_manager.add_message_permament("Hay un problema con la plataforma que están utilizando los agentes, actualmente no están disponibles.", conversation_number, MessageType.B2CHAT_AGENT, phone_number)
                     twilio_messaging.send_answer_to_client("Hay un problema con la plataforma que están utilizando los agentes, actualmente no están disponibles.", conversation_number)
-                await chat_manager.delete_chat_by_id(chat_id)
+                await chat_manager.set_direct_to_agent_false(chat_id)
 
     return str("Ok")
 
@@ -169,9 +169,13 @@ async def handle_incoming_message_client(
     twilio_signature = request.headers.get('x-twilio-signature')
     validator = RequestValidator(AUTH_TOKEN)
 
-    if not validator.validate("https://credit-api.ponx.ai/e510fa23-138a-457f-9577-69b58aa1b24b", form_data, twilio_signature):
+    if not validator.validate("https://credits-panama-api.vipertech.ai/e510fa23-138a-457f-9577-69b58aa1b24b", form_data, twilio_signature):
         await async_logger.warning(f"Hacking Attempt with request: {request}")
         return "Ok" 
+
+    chat_id = await chat_manager.get_chat_id(data_dict['ConversationSid'])
+    if chat_id:
+        await chat_manager.update_conversation_by_phone(data_dict['ConversationSid'], data_dict['Author'])
 
     memory = await get_mongo_manager()
 
@@ -200,7 +204,7 @@ async def handle_incoming_message_client(
 
             ret_msg = "Un agente se pondrá en contacto contigo pronto."
             twilio_messaging.send_answer_to_client(ret_msg, data_dict['ConversationSid'])
-
+            await session_manager.clear_unprocessed_media_urls()
             return "Ok"
 
     if 'Media' in data_dict and data_dict['Media']:
@@ -237,11 +241,14 @@ async def handle_incoming_message_client(
 
 
     message = Message(message=data_dict['Body'], author=data_dict['Author'], conversation=data_dict['ConversationSid'])
-    id = await chat_manager.get_chat_id(message.conversation) 
+    
+    id = await chat_manager.get_chat_id(message.conversation)
     if id:
-        await memory.add_message_permament(message.message, message.conversation, MessageType.B2CHAT_CLIENT, message.author)
-        await b2chat.post_message_to_agent(chat_manager, message.message, id)
-        return "Ok"
+        direct_to_agent = await chat_manager.get_direct_to_agent(id)
+        if direct_to_agent:
+            await memory.add_message_permament(message.message, message.conversation, MessageType.B2CHAT_CLIENT, message.author)
+            await b2chat.post_message_to_agent(chat_manager, message.message, id)
+            return "Ok"
 
     bot_on = await switch_manager.check_off_switch()
 
@@ -304,17 +311,19 @@ async def process_and_respond(sender_id: str):
     # Check if agent handover has already occured
     id = await chat_manager.get_chat_id(messages[0].conversation) 
     print("3")
-    if not id:
-        ret = await execute_message(messages[0])
-        print(f"Responding to {sender_id} with messages: {messages[0]}")
-        twilio_messaging.send_answer_to_client(ret, messages[0].conversation)
-    else:
-        print("Posting to b2c")
-        memory = await get_mongo_manager()
-        await memory.add_message_permament(messages[0].message, messages[0].conversation, MessageType.B2CHAT_CLIENT, messages[0].author)
-        await b2chat.post_message_to_agent(chat_manager, messages[0].message, id)
+    if id:
+        direct_to_agent = await chat_manager.get_direct_to_agent(id)
+        if direct_to_agent:
+            print("Posting to b2c")
+            memory = await get_mongo_manager()
+            await memory.add_message_permament(messages[0].message, messages[0].conversation, MessageType.B2CHAT_CLIENT, messages[0].author)
+            await b2chat.post_message_to_agent(chat_manager, messages[0].message, id)
 
+            return
 
+    ret = await execute_message(messages[0])
+    print(f"Responding to {sender_id} with messages: {messages[0]}")
+    twilio_messaging.send_answer_to_client(ret, messages[0].conversation)
 
 async def execute_message(
         message: Message,

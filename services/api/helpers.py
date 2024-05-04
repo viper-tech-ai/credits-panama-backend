@@ -11,15 +11,15 @@ from logger import async_logger
 def find_dni(text):
     """
     Searches for a DNI number in the provided text.
-    Expects the DNI format to be one of 'X-XXX-XXXX', 'X-XXX-XXX', 'N-XX-XXXX', or 'X-XX-XXXX' 
+    Expects the DNI format to be one of 'X-XXX-XXXX', 'X-XXX-XXX', 'N-XX-XXXX', 'X-XX-XXXX', or 'xxx-xx-xxxx' 
     where X is a digit and N is the letter 'N'.
     
     :param text: String to search in.
     :return: The found DNI number or None if no match is found.
     """
     # Regular expression pattern for DNI number
-    # It matches 'X-XXX-XXXX', 'X-XXX-XXX', 'N-XX-XXXX', and 'X-XX-XXXX'
-    pattern = r'\b(\d-\d{3}-\d{3,4}|N-\d{2}-\d{4})\b'
+    # It matches 'X-XXX-XXXX', 'X-XXX-XXX', 'N-XX-XXXX', 'X-XX-XXXX', and 'xxx-xx-xxxx'
+    pattern = r'\b(\d-\d{3}-\d{3,4}|N-\d{2}-\d{4}|\d{3}-\d{2}-\d{4})\b'
 
     # Search for the pattern in the text
     match = re.search(pattern, text)

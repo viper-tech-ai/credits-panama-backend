@@ -92,7 +92,7 @@ class ChatManager:
         await self.collection.create_index([("conversation_number", 1)], unique=True)
 
     async def insert_chat_id(self, chat_id: str, conversation: str, phone_number: str):
-        document = {"chat_id": chat_id, "conversation_number": conversation, "assigned_agent": False, "phone_number": phone_number}
+        document = {"chat_id": chat_id, "conversation_number": conversation, "direct_to_agent": True, "phone_number": phone_number}
         await self.collection.insert_one(document)
 
     async def get_conversation_number(self, chat_id: str) -> Optional[str]:
@@ -103,20 +103,25 @@ class ChatManager:
         document = await self.collection.find_one({"chat_id": chat_id})
         return document.get("phone_number") if document else None
 
-
     async def get_chat_id(self, conversation_number: str) -> Optional[str]:
         document = await self.collection.find_one({"conversation_number": conversation_number})
         return document.get("chat_id") if document else None
 
-    async def delete_chat_by_id(self, chat_id: str):
-        await self.collection.delete_many({"chat_id": chat_id})
+    async def set_direct_to_agent_true(self, chat_id: str):
+        await self.collection.update_one({"chat_id": chat_id}, {"$set": {"direct_to_agent": True}})
 
-    async def update_assigned_agent(self, chat_id: str):
-        await self.collection.update_one({"chat_id": chat_id}, {"$set": {"assigned_agent": True}})
+    async def set_direct_to_agent_false(self, chat_id: str):
+        await self.collection.update_one({"chat_id": chat_id}, {"$set": {"direct_to_agent": False}})
 
-    async def get_assigned_agent(self, chat_id: str) -> bool:
+    async def get_direct_to_agent(self, chat_id: str) -> bool:
         document = await self.collection.find_one({"chat_id": chat_id})
-        return document.get("assigned_agent", False) if document else False
+        return document.get("direct_to_agent", False) if document else False
+
+    async def update_conversation_by_phone(self, conversation: str, phone_number: str):
+        filter = {"phone_number": phone_number}
+        new_values = {"$set": {"conversation_number": conversation}}
+        result = await self.collection.update_one(filter, new_values)
+
 
 class AnalyticsManager:
     def __init__(self, db: MongoDBManager):
