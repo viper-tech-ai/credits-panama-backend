@@ -204,7 +204,7 @@ async def handle_incoming_message_client(
 
             ret_msg = "Un agente se pondrá en contacto contigo pronto."
             twilio_messaging.send_answer_to_client(ret_msg, data_dict['ConversationSid'])
-            await session_manager.clear_unprocessed_media_urls()
+            await session_manager.clear_unprocessed_media_urls(id)
             return "Ok"
 
     if 'Media' in data_dict and data_dict['Media']:
