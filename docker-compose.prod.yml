@@ -16,6 +16,7 @@ services:
       - B2C_PASS=${B2C_PASS}
       - SUPABASE_URL=${SUPABASE_URL}
       - SUPABASE_KEY=${SUPABASE_KEY}
+      - SSLKEYLOGFILE=/home/app/logs/sslkey.log
     expose:
       - 5000
     labels:
